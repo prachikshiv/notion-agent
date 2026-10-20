@@ -28,7 +28,7 @@ if not check_password():
 
 # 2. APP INITIALIZATION & CLOUD SECRETS CONFIGURATION
 NOTION_TOKEN = st.secrets["NOTION_TOKEN_VALUE"]
-PAGE_ID = st.secrets["NOTION_PAGE_ID_VALUE"]
+PAGE_ID = st.secrets["PAGE_ID_VALUE"]
 GEMINI_KEY = st.secrets["GEMINI_API_KEY_VALUE"]
 
 genai.configure(api_key=GEMINI_KEY)
