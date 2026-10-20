@@ -27,9 +27,9 @@ if not check_password():
     st.stop()
 
 # 2. APP INITIALIZATION & CLOUD SECRETS CONFIGURATION
-NOTION_TOKEN = st.secrets["NOTION_TOKEN_VALUE"]
-PAGE_ID = st.secrets["PAGE_ID_VALUE"]
-GEMINI_KEY = st.secrets["GEMINI_KEY_VALUE"]
+NOTION_TOKEN = st.secrets["NOTION_TOKEN"]
+PAGE_ID = st.secrets["NOTION_PAGE_ID"]
+GEMINI_KEY = st.secrets["GEMINI_API_KEY"]
 
 genai.configure(api_key=GEMINI_KEY)
 model = genai.GenerativeModel("gemini-3.8-flash") 
@@ -74,11 +74,11 @@ def get_notion_notes(page_id):
 
     all_notes = fetch_blocks(page_id)
     if not all_notes:
-        return "CRITICAL WARNING: The Notion page appears to be completely empty or the integration lacks permissions to read it."
+        return "CRITICAL_ERROR_EMPTY"
     return "\n".join(all_notes)
 
 # 4. STREAMLIT INTERFACE & EXAM CHAT INTERACTION
-st.title("💀 OSAI OffSec Exam Agent")
+st.title("💀 OSAI OffSec Exam Proctor & Copilot")
 st.caption("Live-linked to your evolving Notion study workspace.")
 
 if "messages" not in st.session_state:
@@ -99,17 +99,21 @@ if user_prompt := st.chat_input("Enter a concept, URL, or status update..."):
     with st.spinner("Harvesting updated playbooks from Notion..."):
         live_notes = get_notion_notes(PAGE_ID)
 
+    # HARD GROUNDING GATE: Freeze execution if the live data pull fails or is blank
+    if not live_notes or live_notes.strip() == "CRITICAL_ERROR_EMPTY":
+        st.error("⛔ ERROR: The agent cannot pull data from your Notion page! Verify your integration token is added to the page connection settings.")
+        st.stop()
+
     # State-Aware Custom Prompt Engine
     system_instructions = (
         f"You are a local OSAI OffSec Exam Copilot. Your sole purpose is to keep the student on track "
         f"using the exact steps, playbooks, and methodologies defined in these notes:\n\n{live_notes}\n\n"
         "STRICT EXECUTION PROTOCOL:\n"
         "1. GROUNDING: Look up the current target, URL, or milestone provided by the student within your notes. "
-        "Do not invent external exploitation methodologies or tools unless they are cross-referenced in the notes.\n"
-        "2. CONTEXTUAL REASONING: If the notes contain a step-by-step checklist, identify where the student is "
-        "currently stuck based on their input, and print the immediate next sequential command or tool invocation.\n"
-        "3. SCANNABILITY: Break your responses into an immediate direct assessment, followed by a short punchy list of next actions. "
-        "Format terminal snippets and exploit parameters in markdown code blocks."
+        "If the user asks a question or presents a tactical scenario that is NOT addressed in the notes, "
+        "explicitly reply: 'I cannot find an offensive playbook for this scenario in your notes.' Do not invent external methodologies or generic tool definitions.\n"
+        "2. CONTEXTUAL REASONING: Print the immediate next sequential command, flag parameters, or tool invocation from the notes.\n"
+        "3. SCANNABILITY: Provide a direct assessment, followed by next actions in code blocks."
     )
 
     # Format history payload for Gemini API
