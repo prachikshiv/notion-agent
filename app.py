@@ -32,7 +32,7 @@ PAGE_ID = st.secrets["PAGE_ID_VALUE"]
 GEMINI_KEY = st.secrets["GEMINI_KEY_VALUE"]
 
 genai.configure(api_key=GEMINI_KEY)
-model = genai.GenerativeModel("gemini-1.5-flash") # Highly efficient for technical parsing
+model = genai.GenerativeModel("gemini-3.8-flash")  # Highly efficient for technical parsing
 
 # 3. LIVE NOTION DATA HARVESTER
 def get_notion_notes(page_id):
